@@ -1,8 +1,8 @@
 # newfilemanager
 This is an example about filemanager that can show the inventory ,download and upload file.
 
-  这是一个小小的文件管理的web工程，可以使用它完成文件的清单显示，并且可以有多级目录，另外还可以完成文件下载与上传，其中的详细解释在我的博客中：
-http://blog.csdn.net/Adelaide_Guo/article/details/78221738
+  这是一个小小的文件管理的web工程，可以使用它完成文件的清单显示，并且可以有多级目录，另外还可以完成文件下载与上传，使用它你只需要将其中的文件目录更改为你所需要的，其中的详细解释在我的博客中：
+  http://blog.csdn.net/Adelaide_Guo/article/details/78221738
 
   关于前端如何实现的，我拿工作中负责前端的同事做的一个小实例进行了整合。
 
