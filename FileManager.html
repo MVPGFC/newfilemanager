@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>文件管理</title>
+	
+	<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script src="https://cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+	<script src="http://cdn.static.runoob.com/libs/angular.js/1.4.6/angular.min.js"></script>
+	<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="ajaxFileUpload.js"></script>
+	<style type="text/css">
+		.is_active{
+			color:#777;
+			cursor: default;
+			text-decoration: none;
+		}
+	</style>
+</head>
+<body ng-app="GeoEast" ng-controller="fileManageCtr">
+	<div class="container" style="width: 590px">
+		<div class="row">
+			<div class="allFile_container">
+				<table class="table table-bordered">
+					<caption style="padding:0px">
+						<ol class="breadcrumb">
+							<li><a href="#" ng-click="geoEastFileGoHome()">Home</a></li>
+							<li  ng-repeat="(index, value) in geoEastBreadArr">
+								<a href="#" ng-class="{true:'is_active'}[(index+1) == geoEastBreadArr.length]" 
+								ng-click="goBreadcrumb(index,value)" ng-bind="value"
+								></a>
+							</li>
+                        	<span ng-show="geoEastData.showUpAndDown === 1" id="geoEastUpBtn" style="float: right;cursor:pointer;" 
+                        	>上传</span>
+                        	<span style="cursor: pointer;float: right;padding-right: 10px" ng-show="true" 
+                        	 ng-click="geoEastDownFnc()" >下载</span>
+                        </ol>
+                    </caption>
+                    <thead>
+                    	<th ng-if="geoEastData.showUpAndDown == 1" style="width: 40px;" >
+                    		<input type="checkbox" ng-model="geoEastSelectAll" 
+                    		ng-click="geoEastSelectAllFnc(geoEastSelectAll,geoEastTesarry)"></th>
+                    		<th>名称</th>
+                    		<th>文件数</th>
+                    		<th>文件大小</th>
+                    		<th>修改时间</th>
+                    	</thead>
+                    	<tbody>
+                    		<tr ng-repeat="file in geoEastData.datas" ng-click="geoEastFileManagerGetSecondList(file.type,file.name)"
+                    		ng-style="{'cursor':file.type==='folder'?'pointer':'default'}">
+                    		<td ng-if="geoEastData.showUpAndDown == 1">
+                    			<input type="checkbox" ng-model="file.state" ng-checked="(geoEastSelectAll && (file.type=='file'))" 
+                    			ng-click="geoEastFilechk(file.name,file.state)" ng-disabled="file.type=='folder'">
+                    		</td>
+                    		<td ng-if="file.type=='folder'"><span class="foldicon">
+                    			<img src="./images/u85.png" width="20px" height="20px">
+                    		</span><span ng-bind="file.name">文件1</span></td>
+                    		<td ng-if="file.type==='file'"><span class="foldicon">
+                    			<img src="./images/u170.png" width="20px" height="20px">
+                    		</span><span ng-bind="file.name">文件1</span></td>
+                    		<td ng-bind="file.num">4</td>
+                    		<td ng-bind="file.capacity">120M</td>
+                    		<td ng-bind="file.updateDate">2017-07-30</td>
+                    	</tr>
+                    </tbody>
+                </table>
+            </div>
+		</div>
+		<div class="row">
+			<!--上传列表  -->
+                <div class="uploadList_container">
+                  <table class="table table-striped file-table" style="margin-bottom: 0px">
+                    <caption style="padding:0px">
+                      <ol class="breadcrumb">
+                        <li>上传列表</li>
+                        <span ng-class="{true:'optBtnSelect',false:'optBtn'}[optBtnClick==3]" ng-click="geoEastStartAllUpload()">全部开始</span>
+                        <span ng-class="{true:'optBtnSelect',false:'optBtn'}[optBtnClick==4]" ng-click="geoEastStopAllUpload()">全部暂停</span>
+                      </ol>
+                    </caption>
+                  </table>
+                  <div class="fileTabHeader">
+                    <div class="th-filename" style="margin: 0px">文件名</div>
+                    <div class="th-percentDiv">进度</div>
+                    <div class="th-progressnum">大小</div>
+                    <div class="th-uploadBtnDiv">操作1</div>
+                    <div class="th-uploadBtnDiv">操作2</div>
+                  </div>
+                  <div id='tablecontainer' style="width: 580px;height: 200px;overflow-y: auto;"></div>
+                </div>
+            <!-- 上传列表结束 -->
+		</div>
+		<div style="display: none"><input type="file" id="geoEastFileInput" name="file"></div>
+	</div>
+	<script type="text/javascript">
+		var app = angular.module('GeoEast', []);
+		app.controller('fileManageCtr',function($scope){
+			$scope.geoEastBreadArr = [];//面包屑导航的路径
+			$scope.geoEastTesarry = [];//选择文件的名称
+			$scope.geoEastLen = 0; //记录文件格式
+			$scope.geoEastFileChoseArr = [];//记录选择的文件
+			$scope.geoEastSelectAll = false;//初始化列表多选框
+			
+		$('#geoEastUpBtn').click(function(event) {
+			/* Act on the event */
+			$('#geoEastFileInput').click();
+		});
+		
+		var fun_upload = function(){
+			if( $("#geoEastFileInput").val()){
+				$.ajaxFileUpload({
+                    url: 'http://localhost:8080/file/upload?path='+$scope.geoEastBreadArr.join('/'),
+                    secureuri: false,
+                    fileElementId: 'geoEastFileInput', //file标签的id  
+                    dataType: 'json', //返回数据的类型  
+                    success: function(result) {
+                        //BlockScreen.cancelBlock(document);
+                        console.log('上传结果！！！');
+                        console.log(result);
+                        if (result && result.hasOwnProperty("success")) {
+                        	alert(result.success);
+                        }
+                        $("#geoEastFileInput").val("");
+                    },
+                    error: function(result) {                       
+                        console.log(result);
+                        //alert(result);
+                    }
+                });
+			}
+		}
+		
+		
+		$("#geoEastFileInput").change(function() {
+            if (confirm("确定上传数据?") && $("#geoEastFileInput").val()) {
+                
+                fun_upload()
+                
+            }
+        }); 
+		
+
+			$scope.init = function(){
+				$.ajax({
+					url: 'http://localhost:8080/file/getList',
+					type: 'POST',
+					dataType: 'json',
+					success:function(result){
+						if(result && result.hasOwnProperty('data') && result.data){						
+							$scope.geoEastBreadArr = [];
+
+							$scope.geoEastData = result.data;
+							$scope.geoEastData.showUpAndDown = 0;
+							$scope.$apply();
+						}else{
+							alert('数据加载失败')
+						}
+					}
+				});				
+			}
+
+			$scope.init();
+
+			$scope.geoEastFileGoHome = function(){
+				$scope.geoEastBreadArr.splice(0,$scope.geoEastBreadArr.length);
+				$scope.init();
+			}
+
+			$scope.geoEastFileManagerGetSecondList = function(type,name){
+				if(type!='folder'){
+					return
+				}else{
+					var path = $scope.geoEastBreadArr.join('/');
+					if(path){
+						path = path+'/'+name;
+					}else{
+						path = name
+					}
+					$.ajax({
+						url: 'http://localhost:8080/file/getList',
+						type: 'POST',
+						dataType: 'json',
+						data: {file_path: path},
+						success:function(result){
+						if(result && result.hasOwnProperty('data') && result.data){
+							$scope.geoEastBreadArr.push(name);
+							$scope.geoEastData = result.data;
+							$scope.geoEastTesarry = [];
+							$scope.geoEastLen = 0;
+							if(result.data.datas){								
+								$.each(result.data.datas, function(index, obj) {
+									/* iterate through array or object */
+									obj.state = false;  //填充一个属性使用在列表的单选和多选
+									if(obj.type==="file"){
+										$scope.geoEastTesarry.push(path+'/'+obj.name);									 	
+									}
+								});
+							}else{
+								$scope.geoEastData.datas = [];
+							}
+							$scope.geoEastLen = $scope.geoEastTesarry.length
+							$scope.geoEastData.showUpAndDown = 1;
+							$scope.$apply();
+						}
+					}
+					});
+					
+				}
+			}
+
+			//返回指定目录
+			$scope.goBreadcrumb = function(index,name){
+				var path = $scope.geoEastBreadArr.slice(0,index).join("/");
+				if(path){
+					path = path + '/' + name
+				}else{
+					path = name
+				}
+				$.ajax({
+					url: "http://localhost:8080/file/getList",
+					type: 'POST',
+					dataType: 'json',
+					data: {'file_path': path},
+					success:function(result){
+						if(result && result.hasOwnProperty('data') && result.data){
+							//$scope.geoEastFolderId = id;
+							// $('.breadcrumb li.active').text(name);
+							$scope.geoEastBreadArr = $scope.geoEastBreadArr.splice(0,index+1);
+							$scope.geoEastData = result.data;
+							$scope.geoEastTesarry = [];
+							$scope.geoEastLen = 0;
+							if(result.data.datas){								
+								$.each(result.data.datas, function(index, obj) {
+									 /* iterate through array or object */
+									 obj.state = false;  //填充一个属性使用在列表的单选和多选
+									 if(obj.type == 'file')
+									 $scope.geoEastTesarry.push(path+'/'+obj.name);	
+								});
+							}else{
+								$scope.geoEastData.datas = [];
+							}
+							$scope.geoEastLen = $scope.geoEastTesarry.length
+							$scope.geoEastData.showUpAndDown = 1;
+							$scope.$apply();
+						}
+					}
+				})
+			}
+
+			//文件管理列表多选
+			$scope.geoEastSelectAllFnc = function(c,v){
+				if(c == true){
+					$.each($scope.geoEastData.datas, function(index, obj) {
+						/* iterate through array or object */
+						if(obj.type == 'file')
+							obj.state = true;
+					});
+					$scope.geoEastFileChoseArr = angular.copy(v)
+				}else{
+					$.each($scope.geoEastData.datas, function(index, obj) {
+			 			  // iterate through array or object 
+			 			 obj.state = false;
+			 		});
+			 		$scope.geoEastFileChoseArr = [];
+				}
+			}
+
+			//文件管理列表复选框单选
+			$scope.geoEastFilechk = function(z,x){
+				if(x == true){
+			 		$scope.geoEastFileChoseArr.push(z);
+			 		if($scope.geoEastFileChoseArr.length == $scope.geoEastLen){
+			 			$scope.geoEastSelectAll = true;
+			 		}
+			 		//console.log($scope.geoEastFileChoseArr);
+			 	}else{
+			 		$scope.geoEastFileChoseArr.splice($scope.geoEastFileChoseArr.indexOf(z),1);//取消选中
+			 	}
+
+			 	if($scope.geoEastFileChoseArr.length == 0){
+			 		$scope.geoEastSelectAll = false
+			 	}
+			}
+
+			//文件请求下载
+			$scope.downLoadRequest = function(xhr,url,path){
+				xhr.open('POST',url,true);
+				xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");  
+				xhr.send("file_path="+path);
+			}
+
+			//文件下载
+			$scope.downLoadFnc = function(url,fileObj){
+				var down_url = url
+				var xhr = false;
+	            //自己修改一下下载文件的大小，与下载的文件大小相同
+	            try{
+	               xhr=new XMLHttpRequest();//尝试创建 XMLHttpRequest 对象，除 IE 外的浏览器都支持这个方法。
+	            }catch(e){    
+	               xhr=ActiveXobject("Msxml12.XMLHTTP");//使用较新版本的 IE 创建 IE 兼容的对象（Msxml2.XMLHTTP）。
+	            }
+	            
+	            xhr.responseType = "blob";
+	            xhr.onreadystatechange = function () {
+	               if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 206)) {
+	                  var filename = fileObj.name;
+	                  if (typeof window.chrome !== 'undefined') {
+	                     // Chrome version
+	                     var link = document.createElement('a');
+	                     link.href = window.URL.createObjectURL(xhr.response);
+	                     link.download = filename;
+	                     link.click();
+	                  } else if (typeof window.navigator.msSaveBlob !== 'undefined') {
+	                  // IE version
+	                  var blob = new Blob([xhr.response], { type: 'application/force-download' });
+	                  window.navigator.msSaveBlob(blob, filename);
+	                  } else {
+	                     // Firefox version
+	                     var file = new File([xhr.response], filename, { type: 'application/force-download' });
+	                     window.open(URL.createObjectURL(file));
+	                  }
+	               }
+	            };
+	            //开始上传
+	            var path = $scope.geoEastBreadArr.join('/');
+	            path = path+'/'+fileObj.name;
+	            $scope.downLoadRequest(xhr,down_url,path);
+			}
+
+			//文件下载
+			$scope.geoEastDownFnc = function(){
+				var page_url = "http://localhost:8080/file/downLoadFile";
+				$scope.downNewFile = [];
+				$.each($scope.geoEastFileChoseArr, function(index, val) {
+					 /* iterate through array or object */
+					$.each($scope.geoEastData.datas, function(index, obj) {
+						 /* iterate through array or object */
+						 if(obj.name == val){
+						 	//$scope.geoEastSelectFiles.push(obj);
+						 	$scope.downNewFile.push(obj);
+						 	return false;
+						 }
+					});
+				});
+				$.each($scope.downNewFile, function(index, fileObj) {
+					/* iterate through array or object */
+					$scope.downLoadFnc(page_url,fileObj);				 						
+				});
+			}
+		})
+	</script>
+</body>
+</html>
